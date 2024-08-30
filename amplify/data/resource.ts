@@ -1,4 +1,5 @@
-import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import { type ClientSchema, a, defineData } from '@aws-amplify/backend'
+import { sayHello } from '../functions/say-hello/resource'
 
 /*== STEP 1 ===============================================================
 The section below creates a Todo database table with a "content" field. Try
@@ -7,24 +8,46 @@ specifies that any user authenticated via an API key can "create", "read",
 "update", and "delete" any "Todo" records.
 =========================================================================*/
 const schema = a.schema({
+  sayHello: a
+    .query()
+    .arguments({
+      name: a.string(),
+    })
+    .returns(a.string())
+    .handler(a.handler.function(sayHello))
+    .authorization((allow) => [allow.authenticated()]),
   Todo: a
     .model({
       content: a.string(),
-    }).authorization(allow => [allow.owner()]),
-});
+    })
+    .authorization((allow) => [allow.owner()]),
+  Chat: a
+    .model({
+      name: a.string(),
+      message: a.hasMany('Message', 'chatId'),
+    })
+    .authorization((allow) => [allow.owner()]),
+  Message: a
+    .model({
+      text: a.string(),
+      chat: a.belongsTo('Chat', 'chatId'),
+      chatId: a.id(),
+    })
+    .authorization((allow) => [allow.owner()]),
+})
 
-export type Schema = ClientSchema<typeof schema>;
+export type Schema = ClientSchema<typeof schema>
 
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: "userPool",
+    defaultAuthorizationMode: 'userPool',
     // API Key is used for a.allow.public() rules
     apiKeyAuthorizationMode: {
       expiresInDays: 30,
     },
   },
-});
+})
 
 /*== STEP 2 ===============================================================
 Go to your frontend source code. From your client-side code, generate a
